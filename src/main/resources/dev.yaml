@@ -1,0 +1,20 @@
+amqp:
+  host: "shrimp.rmq.cloudamqp.com"
+  port: "5672"
+  virtualHost: "***REMOVED***"
+  username: "***REMOVED***"
+  password: "***REMOVED***"
+  heartbeatTimeout: "60"
+  publisher1:
+    exchange: new-person
+  listener1:
+    queue: backend1-person
+  listener2:
+    queue: backend2-person
+http:
+  listener:
+    basepath: "/g-delivery"
+    port: "8081"
+    
+api:
+  id: "***REMOVED***"

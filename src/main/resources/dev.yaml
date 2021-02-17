@@ -11,6 +11,12 @@ amqp:
     queue: backend1-person
   listener2:
     queue: backend2-person
+    
+amq:
+  url: "https://mq-us-east-1.anypoint.mulesoft.com/api/v1"
+  client_id: "***REMOVED***"
+  client_secret: "***REMOVED***"
+   
 http:
   listener:
     basepath: "/g-delivery"

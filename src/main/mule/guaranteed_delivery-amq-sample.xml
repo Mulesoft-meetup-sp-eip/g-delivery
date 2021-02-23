@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:anypoint-mq="http://www.mulesoft.org/schema/mule/anypoint-mq" xmlns:jms="http://www.mulesoft.org/schema/mule/jms"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/amqp http://www.mulesoft.org/schema/mule/amqp/current/mule-amqp.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/mule/anypoint-mq/current/mule-anypoint-mq.xsd">
+	<sub-flow name="publisher_amq-Sub_flow" doc:id="d6d393a1-2832-4323-ac80-5b651460ae0d" >
+		<logger level="INFO" doc:name="Log PERSON being Published" doc:id="6e8fb771-c7e9-45c3-89e4-a82ddd32fff9" message='#[%dw 2.0
+output application/json
+---
+{
+	target: "AMQ",
+	message: "Person named " 
+		++ (vars.person."first-name" default "NONAME") 
+		++ " received through HTTP request.",
+	operation: attributes.queryParams."operation" default "NOOPERATION"
+}]'/>
+		<anypoint-mq:publish doc:name="Publish eip-guaranteeddelivery" doc:id="39addecd-041b-4ab7-8f3e-f7083fc4d2d6" config-ref="Anypoint_MQ_Config" destination="${amq.publisher1.exchange}">
+			<anypoint-mq:body><![CDATA[#[%dw 2.0
+output application/json
+---
+payload]]]></anypoint-mq:body>
+			<anypoint-mq:properties ><![CDATA[#[output application/java
+---
+{
+	operation : attributes.queryParams."operation"
+}]]]></anypoint-mq:properties>
+		</anypoint-mq:publish>
+	</sub-flow>
+	<flow name="listener1_amq-Flow" doc:id="32c90a76-b55d-437f-9d65-4cdda7b50901" >
+		<anypoint-mq:subscriber doc:name="AUTOACK" doc:id="7ad0e48c-262c-4449-ac69-0ab8392ea076" config-ref="Anypoint_MQ_Config" destination="${amqp.listener1.queue}" acknowledgementTimeout="7000">
+			<redelivery-policy maxRedeliveryCount="10"/>
+			<reconnect />
+		</anypoint-mq:subscriber>
+		<ee:transform doc:name="Set JAVA var Person and headers in variables from AMQP MSG" doc:id="5bf96da0-5897-4e00-a17c-764f152b3b4f">
+			<ee:message />
+			<ee:variables>
+				<ee:set-variable variableName="person"><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-variable>
+				<ee:set-variable variableName="operation" ><![CDATA[attributes.properties.operation]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Log AMQP MSG" doc:id="d3e06e7a-619f-4ec4-aa92-ef386d5e21f3" message='#[%dw 2.0
+output application/json
+---
+{
+	source: "AMQ",
+	message: "Person named " 
+		++ (vars.person."first-name" default "NONAME") 
+		++ " received from the queue.",
+	operation: vars.operation
+}]' />
+		<choice doc:name="Check operation" doc:id="98d1ce1d-8856-49db-bbc5-420daeb42145">
+			<when expression='#[vars.operation == "ERROR"]'>
+				<logger level="INFO" doc:name="Log ERROR" doc:id="19510738-3461-4b4f-8e88-78267af0ab6d" message='#[%dw 2.0
+output application/json
+---
+{
+	source: "AMQ",
+	message: "Person named " 
+		++ (vars.person."first-name" default "NONAME") 
+		++ " received with errors. "
+}]'/>
+				<raise-error doc:name="Raise error" doc:id="388b04b6-5b09-49da-8cff-f8acc93d7c67" type="BUSINESS:PERSON_IS_BLOCKED" description="This person is not allowed to be inserted on the system." />
+			</when>
+			<otherwise>
+				<logger level="INFO" doc:name="Log DEFAULT(EVERYTHING ELSE)" doc:id="53ea524c-1bee-4b6e-961b-73c4515ae857" message='#[%dw 2.0
+output application/json
+---
+{
+	source: "AMQ",
+	message: "Person named " 
+		++ (vars.person."first-name" default "") 
+		++ " accepted succesfully"
+}]' />
+			</otherwise>
+		</choice>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="94fbd16d-6434-46a4-8930-7f4bc1bfe3c2" type="MULE:REDELIVERY_EXHAUSTED">
+				<logger level="ERROR" doc:name="Log REJECT by ERROR THROWN" doc:id="0840da5f-e94a-4208-a791-57b57c1a0ca8" message='#[%dw 2.0
+output application/json
+---
+{
+	source: "AMQ",
+	message: "Message Rejected by Exhaustion of Error Thrown.",
+	details: error.description default "NODESCRIPTION"
+}]' />
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="1eee2974-013b-4499-9b0d-4c49e08687f5" >
+				<logger level="ERROR" doc:name="Log ERROR THROWN" doc:id="191522fb-7011-4169-8c42-26b10a24781a" message='#[%dw 2.0
+output application/json
+---
+{
+	source: "AMQ",
+	message: "Person named " 
+		++ (vars.person."first-name" default "NONAME") 
+		++ " thrown an error.",
+	details: error.description default "NODESCRIPTION"
+}]' />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>

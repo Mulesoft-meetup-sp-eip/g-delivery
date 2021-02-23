@@ -10,7 +10,13 @@ http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/m
 http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
 http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/mule/anypoint-mq/current/mule-anypoint-mq.xsd">
 	<amqp:config name="AMQP_Config" doc:name="AMQP Config" doc:id="efb731b8-e1dc-45e7-a704-4ddcbbf644c3" >
-		<amqp:connection host="${amqp.host}" port="${amqp.port}" virtualHost="${amqp.virtualHost}" username="${amqp.username}" password="${amqp.password}" heartbeatTimeout="${amqp.heartbeatTimeout}" />
+		<amqp:connection host="${amqp.host}" port="${amqp.port}" virtualHost="${amqp.virtualHost}" username="${amqp.username}" password="${amqp.password}" heartbeatTimeout="${amqp.heartbeatTimeout}" >
+			<reconnection >
+				<reconnect-forever frequency="5000" />
+			</reconnection>
+		</amqp:connection>
+		<amqp:consumer-config ackMode="AUTO" numberOfConsumers="1" />
+		<amqp:quality-of-service-config prefetchCount="1" />
 	</amqp:config>
 	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="f1e1dbdc-f9eb-4264-8398-8625a3fd864b" basePath="${http.listener.basepath}" >
 		<http:listener-connection host="0.0.0.0" port="${http.listener.port}" />
@@ -19,7 +25,9 @@ http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/m
 	<configuration-properties doc:name="Configuration properties" doc:id="b24461c0-9165-44c9-8459-72b2a59c3bc7" file="${env_var}.yaml" />
 	<anypoint-mq:config name="Anypoint_MQ_Config" doc:name="Anypoint MQ Config" doc:id="e6365d41-d2c4-44bd-b80d-0cd779498733" >
 		<anypoint-mq:connection url="${amq.url}" clientId="${amq.client_id}" clientSecret="${amq.client_secret}" >
-			<reconnection />
+			<reconnection >
+				<reconnect-forever frequency="5000" />
+			</reconnection>
 		</anypoint-mq:connection>
 	</anypoint-mq:config>
 </mule>

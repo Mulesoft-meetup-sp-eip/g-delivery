@@ -132,6 +132,13 @@ output application/java
 payload]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
-		<flow-ref doc:name="publisher-Sub_flow" doc:id="5a209f49-faaf-4653-9c54-856cfe2faa7c" name="publisher-Sub_flow"/>
+		<choice doc:name="Choice" doc:id="ff0e5e31-63a6-4800-bb76-eab609dc6122" >
+			<when expression='#[attributes.queryParams."mb" == "AMQ"]'>
+				<flow-ref doc:name="publisher_amq-Sub_flow" doc:id="81349711-f482-4650-8354-3d9039e4752b" name="publisher_amq-Sub_flow"/>
+			</when>
+			<otherwise >
+				<flow-ref doc:name="publisher_rmq-Sub_flow" doc:id="5a209f49-faaf-4653-9c54-856cfe2faa7c" name="publisher_rmq-Sub_flow" />
+			</otherwise>
+		</choice>
     </flow>
 </mule>

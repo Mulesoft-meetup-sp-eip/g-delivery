@@ -122,7 +122,7 @@ output application/json
         </error-handler>
     </flow>
     <flow name="post:\person:application\json:guaranteed_delivery-sample-config">
-        <ee:transform doc:name="Transform Message" doc:id="b878ee2c-ff09-4819-87b6-c7043cd08d92" >
+        <ee:transform doc:name="Set var person Java Object" doc:id="b878ee2c-ff09-4819-87b6-c7043cd08d92" >
 			<ee:message >
 			</ee:message>
 			<ee:variables >
@@ -140,5 +140,22 @@ payload]]></ee:set-variable>
 				<flow-ref doc:name="publisher_rmq-Sub_flow" doc:id="5a209f49-faaf-4653-9c54-856cfe2faa7c" name="publisher_rmq-Sub_flow" />
 			</otherwise>
 		</choice>
+		<ee:transform doc:name="Set payload example transaction" doc:id="095cae64-30e0-4a0a-91ef-c3035cacaf95" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  uid: "9FaCD076-aca2-Ac99-5A7AceC80bD8",
+  "http-method": "POST",
+  resource: "/person",
+  key: "",
+  status: "Queued",
+  details: "Inserted on the queue",
+  "created-at": now() as DateTime >> "America/Sao_Paulo" as String {format: "yyyy-MM-dd HH:mm:ss"}
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables />
+		</ee:transform>
     </flow>
 </mule>

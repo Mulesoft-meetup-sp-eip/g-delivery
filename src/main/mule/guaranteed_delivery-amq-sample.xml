@@ -8,16 +8,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
 http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/mule/anypoint-mq/current/mule-anypoint-mq.xsd">
 	<sub-flow name="publisher_amq-Sub_flow" doc:id="d6d393a1-2832-4323-ac80-5b651460ae0d" >
-		<logger level="INFO" doc:name="Log PERSON being Published" doc:id="6e8fb771-c7e9-45c3-89e4-a82ddd32fff9" message='#[%dw 2.0
-output application/json
----
-{
-	target: "AMQ",
-	message: "Person named " 
-		++ (vars.person."first-name" default "NONAME") 
-		++ " received through HTTP request.",
-	operation: attributes.queryParams."operation" default "NOOPERATION"
-}]'/>
+		<logger level="INFO" doc:name="Log PERSON being Published" doc:id="6e8fb771-c7e9-45c3-89e4-a82ddd32fff9" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	target: "AMQ",&#10;	message: "Person named " &#10;		++ (vars.person."first-name" default "NONAME") &#10;		++ " received through HTTP request.",&#10;	target: "Backend",&#10;	operation: attributes.queryParams."operation" default "NOOPERATION"&#10;}]'/>
 		<anypoint-mq:publish doc:name="Publish eip-guaranteeddelivery" doc:id="39addecd-041b-4ab7-8f3e-f7083fc4d2d6" config-ref="Anypoint_MQ_Config" destination="${amq.publisher1.exchange}">
 			<anypoint-mq:body><![CDATA[#[%dw 2.0
 output application/json
@@ -45,63 +36,22 @@ payload]]></ee:set-variable>
 				<ee:set-variable variableName="operation" ><![CDATA[attributes.properties.operation]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
-		<logger level="INFO" doc:name="Log AMQP MSG" doc:id="d3e06e7a-619f-4ec4-aa92-ef386d5e21f3" message='#[%dw 2.0
-output application/json
----
-{
-	source: "AMQ",
-	message: "Person named " 
-		++ (vars.person."first-name" default "NONAME") 
-		++ " received from the queue.",
-	operation: vars.operation
-}]' />
+		<logger level="INFO" doc:name="Log Person MSG" doc:id="d3e06e7a-619f-4ec4-aa92-ef386d5e21f3" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	source: "AMQ",&#10;	message: "Person named " &#10;		++ (vars.person."first-name" default "NONAME") &#10;		++ " received from the queue.",&#10;	target: "Backend",&#10;	operation: vars.operation&#10;}]' />
 		<choice doc:name="Check operation" doc:id="98d1ce1d-8856-49db-bbc5-420daeb42145">
 			<when expression='#[vars.operation == "ERROR"]'>
-				<logger level="INFO" doc:name="Log ERROR" doc:id="19510738-3461-4b4f-8e88-78267af0ab6d" message='#[%dw 2.0
-output application/json
----
-{
-	source: "AMQ",
-	message: "Person named " 
-		++ (vars.person."first-name" default "NONAME") 
-		++ " received with errors. "
-}]'/>
+				<logger level="INFO" doc:name="Log ERROR" doc:id="19510738-3461-4b4f-8e88-78267af0ab6d" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	source: "AMQ",&#10;	message: "Person named " &#10;		++ (vars.person."first-name" default "NONAME") &#10;		++ " received with errors.",&#10;	target: "Backend"&#10;}]'/>
 				<raise-error doc:name="Raise error" doc:id="388b04b6-5b09-49da-8cff-f8acc93d7c67" type="BUSINESS:PERSON_IS_BLOCKED" description="This person is not allowed to be inserted on the system." />
 			</when>
 			<otherwise>
-				<logger level="INFO" doc:name="Log DEFAULT(EVERYTHING ELSE)" doc:id="53ea524c-1bee-4b6e-961b-73c4515ae857" message='#[%dw 2.0
-output application/json
----
-{
-	source: "AMQ",
-	message: "Person named " 
-		++ (vars.person."first-name" default "") 
-		++ " accepted succesfully"
-}]' />
+				<logger level="INFO" doc:name="Log DEFAULT(EVERYTHING ELSE)" doc:id="53ea524c-1bee-4b6e-961b-73c4515ae857" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	source: "AMQ",&#10;	message: "Person named " &#10;		++ (vars.person."first-name" default "") &#10;		++ " accepted succesfully",&#10;	target: "Backend",&#10;}]' />
 			</otherwise>
 		</choice>
 		<error-handler >
 			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="94fbd16d-6434-46a4-8930-7f4bc1bfe3c2" type="MULE:REDELIVERY_EXHAUSTED">
-				<logger level="ERROR" doc:name="Log REJECT by ERROR THROWN" doc:id="0840da5f-e94a-4208-a791-57b57c1a0ca8" message='#[%dw 2.0
-output application/json
----
-{
-	source: "AMQ",
-	message: "Message Rejected by Exhaustion of Error Thrown.",
-	details: error.description default "NODESCRIPTION"
-}]' />
+				<logger level="ERROR" doc:name="Log REJECT by ERROR THROWN" doc:id="0840da5f-e94a-4208-a791-57b57c1a0ca8" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	source: "AMQ",&#10;	message: "Message Rejected by Exhaustion of Error Thrown.",&#10;	target: "Backend",&#10;	details: error.description default "NODESCRIPTION"&#10;}]' />
 			</on-error-propagate>
 			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="1eee2974-013b-4499-9b0d-4c49e08687f5" >
-				<logger level="ERROR" doc:name="Log ERROR THROWN" doc:id="191522fb-7011-4169-8c42-26b10a24781a" message='#[%dw 2.0
-output application/json
----
-{
-	source: "AMQ",
-	message: "Person named " 
-		++ (vars.person."first-name" default "NONAME") 
-		++ " thrown an error.",
-	details: error.description default "NODESCRIPTION"
-}]' />
+				<logger level="ERROR" doc:name="Log ERROR THROWN" doc:id="191522fb-7011-4169-8c42-26b10a24781a" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	source: "AMQ",&#10;	message: "Person named " &#10;		++ (vars.person."first-name" default "NONAME") &#10;		++ " thrown an error.",&#10;	target: "Backend",&#10;	details: error.description default "NODESCRIPTION"&#10;}]' />
 			</on-error-propagate>
 		</error-handler>
 	</flow>
